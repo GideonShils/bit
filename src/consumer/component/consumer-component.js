@@ -522,9 +522,9 @@ export default class Component {
               }
             });
 
-            const entryDirectory = Component.calculateEntryData(consumer.bitJson.distEntry, consumer.getPath());
+            // const entryDirectory = Component.calculateEntryData(consumer.bitJson.distEntry, consumer.getPath());
             this.dists = buildedFiles.map((file) => {
-              file.cwd = entryDirectory;
+              file.cwd = consumer.getPath();
               file.distFilePath = path.join(consumer.getPath(), consumer.bitJson.distTarget, file.relative);
               return new Dist(file);
             });
@@ -660,17 +660,19 @@ export default class Component {
       }
     }
 
-    entryDirectory = entryDirectory || this.calculateEntryData(consumerBitJson.distEntry, consumerPath);
+    // TODO: Remove all the entryDirectory if we decide to omit it
+    // Also in consumer-bit-json and other places
+    // entryDirectory = entryDirectory || this.calculateEntryData(consumerBitJson.distEntry, consumerPath);
 
     const vinylFiles = Object.keys(files).map((file) => {
       const filePath = path.join(consumerPath, files[file]);
-      return SourceFile.load(filePath, consumerBitJson.distTarget, entryDirectory, consumerPath);
+      return SourceFile.load(filePath, consumerBitJson.distTarget, undefined, consumerPath);
     });
 
     // TODO: Decide about the model representation
     componentMap.testsFiles.forEach((testFile) => {
       const filePath = path.join(consumerPath, testFile);
-      vinylFiles.push(SourceFile.load(filePath, consumerBitJson.distTarget, entryDirectory, consumerPath, { isTest: true }));
+      vinylFiles.push(SourceFile.load(filePath, consumerBitJson.distTarget, undefined, consumerPath, { isTest: true }));
     });
 
     return new Component({

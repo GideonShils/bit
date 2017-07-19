@@ -9,7 +9,7 @@ import logger from '../../../logger/logger';
 export default class SourceFile extends Vinyl {
   distFilePath: ?string;
 
-  static load(filePath: string, distTarget: string, entryDirectory: string, consumerPath: string, extendedProps: Object): SourceFile|null {
+  static load(filePath: string, distTarget: string, entryDirectory: string = consumerPath, consumerPath: string, extendedProps: Object): SourceFile|null {
     try {
       const file = new SourceFile(vinylFile.readSync(filePath, { base: entryDirectory }));
       file.distFilePath = path.join(consumerPath, distTarget, file.relative);
