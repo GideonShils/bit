@@ -295,7 +295,7 @@ export default class Component {
 
   async writeToComponentDir(bitDir: string, withBitJson: boolean, force?: boolean = true) {
     await mkdirp(bitDir);
-    if (this.impl) await this.impl.write(bitDir, this.implFile, force);
+    // if (this.impl) await this.impl.write(bitDir, this.implFile, force);
     if (this.specs) await this.specs.write(bitDir, this.specsFile, force);
     if (this.files) await this.files.forEach(file => file.write(path.join(bitDir, file.base), force));
     if (this.dists) await this.dists.forEach(dist => dist.write(path.join(bitDir, dist.base), force));
@@ -326,23 +326,25 @@ export default class Component {
       // if (this.license && this.license.src) await this.license.write(bitDir, force); // todo: is it needed?
       return this;
     }
-    // TODO: Make sure to add the component origin arg
-    await this.writeToComponentDir(bitDir, withBitJson, force);
 
     if (!this.files) {
       if (!this.impl) throw new Error('Invalid component. There are no files nor impl.js file to write');
-
       // for backward compatibility add impl.js to files.
       const implVinylFile = new SourceFile({
-        path: path.join(bitDir, this.implFile),
+        path: this.implFile,
+        base: './',
         contents: new Buffer(this.impl.src)
       });
       this.files = [implVinylFile];
     }
 
+    // TODO: Make sure to add the component origin arg
+    await this.writeToComponentDir(bitDir, withBitJson, force);
+
     const filesToAdd = {};
     this.files.forEach((file) => {
-      filesToAdd[file.basename] = path.join(bitDir, file.path);
+      // TODO: This should be changed to be file.path without the join with bitDir. bitDir just should be defined as base
+      filesToAdd[file.basename] = bitDir ? file.path : path.join(bitDir, file.path);
     });
     bitMap.addComponent({
       componentId: this.id,
@@ -663,15 +665,16 @@ export default class Component {
     // TODO: Remove all the entryDirectory if we decide to omit it
     // Also in consumer-bit-json and other places
     // entryDirectory = entryDirectory || this.calculateEntryData(consumerBitJson.distEntry, consumerPath);
+    const fullBitDir = path.join(consumerPath, bitDir);
 
     const vinylFiles = Object.keys(files).map((file) => {
-      const filePath = path.join(consumerPath, files[file]);
+      const filePath = path.join(fullBitDir, files[file]);
       return SourceFile.load(filePath, consumerBitJson.distTarget, undefined, consumerPath);
     });
 
     // TODO: Decide about the model representation
     componentMap.testsFiles.forEach((testFile) => {
-      const filePath = path.join(consumerPath, testFile);
+      const filePath = path.join(fullBitDir, testFile);
       vinylFiles.push(SourceFile.load(filePath, consumerBitJson.distTarget, undefined, consumerPath, { isTest: true }));
     });
 
@@ -706,6 +709,7 @@ export default class Component {
     const lang = consumerBitJson.lang;
     const implVinylFile = new SourceFile({
       path: files['impl.js'],
+      base: './',
       contents: new Buffer(Impl.create(name, compilerId, scope).src)
     });
 
